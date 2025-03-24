@@ -1,0 +1,57 @@
+.env
+.venv
+.idea
+_pycache_
+_init_
+api_key.txt
+
+env/
+.venv
+.idea
+_pycache_
+_pycache_
+_init_
+frontend/cmb/node_modules/
+.git/
+# Node.js dependencies
+node_modules/
+
+# Next.js build output
+.next/
+
+# Build output for production
+out/
+
+# Dependency directories created by npm or yarn
+package-lock.json
+yarn.lock
+
+# System-specific files
+.DS_Store
+Thumbs.db
+
+# Environment variable files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Optional: If using serverless deployment, ignore related files
+.serverless/
+
+# Optional: If you're using test coverage tools
+coverage/
+
+# Optional: If you have uploaded static files or images that shouldn't be tracked
+public/uploads/
+config/
