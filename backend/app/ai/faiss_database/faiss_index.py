@@ -34,6 +34,8 @@ global image_tags
 image_tags = {}
 tag_embeddings = []
 tag_ids = []
+
+
 def normalize_embedding(embedding):
     """ Normalize embedding to unit length for cosine similarity """
     return embedding / np.linalg.norm(embedding)
