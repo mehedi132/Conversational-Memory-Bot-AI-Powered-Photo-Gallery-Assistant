@@ -106,16 +106,13 @@ async def search(
                     f.write(await file.read())
                                
                 local_path=os.path.basename(temp_path)
-                # print("TEMP LOCAL ",temp_path)
-                # print("local file pathii: ",local_path)
-                # print("-" * 50)
+                
                 temp_path= os.path.abspath(os.path.join(UPLOAD_DIR, local_path))
-                # print("fTEMP LOCAL ",temp_path)
+              
                  
                 
                 image_metatag=find_image_in_database(local_path, metadata_dictionay)
-                # print("file path data: ",image_metatag)
-                # print("-" * 50)
+               
         elif imagePaths:
             c=2
             print("image from gallery")
@@ -123,13 +120,12 @@ async def search(
             paths = json.loads(imagePaths)
            
             for path in paths:
-                # print(f"Searching with gallery image: {path}")
+              
                 local_path=os.path.basename(path)
-                # print("image local path: ",local_path)
+               
                 final_path2=os.path.abspath(os.path.join(UPLOAD_DIR, local_path))
                 image_metatag=find_image_in_database(local_path, metadata_dictionay)        
-            # print("final path: ",final_path2)        
-       
+          
         try:
             result=process_input_langchain(text)
             # print("Resultt: ",result)      
@@ -149,19 +145,18 @@ async def search(
                 print("similar images uploaded files: ",similar_images)
                
                     
-                # print("-" * 50)
+                
                 description_tag_list=similar_images_description_tag(metadata_dictionay,similar_images)                
                 description_tag_json = json.dumps(description_tag_list)
                 print("description_tag_json: ",description_tag_json)   
                 print("-" * 50)          
             
                 try:
-                    # print("Prompt input variables: ", image_match_with_text_prompt.input_variables)
-                    #print("Imported prompt template: ", image_match_prompt.template)
+                    
                     formatted_prompt =image_match_with_text_prompt.format(
                         image_data=description_tag_json,
                         user_query=text)  # Use text as the value
-                    #print("Formatted prompt: ", formatted_prompt)
+                    
                 except KeyError as e:
                     return f"Prompt formatting error: {str(e)} (check prompt variables)"
                
@@ -177,8 +172,7 @@ async def search(
                 if image_metatag is not None:                             
                     found_image_metadata = json.dumps(image_metatag)
                     print("Image found in database" ,found_image_metadata)
-                    # print("-" * 50)
-
+                    
                     # Prepare LLM prompt and messages
                     try:
                        
@@ -187,7 +181,7 @@ async def search(
                             image_metadata=found_image_metadata
                         )
                        
-                        #print("Formatted Prompt:\n", formatted_prompt)
+                        
                     except KeyError as e:
                         error_msg = f"Prompt formatting error: {str(e)} (check prompt variables)"
                         # print(error_msg)
@@ -236,13 +230,8 @@ async def search(
                 # print("description_tag_list: ",description_tag_list)
                 description_tag_json = json.dumps(description_tag_list)
                
-               
-                # print("text= ",text)
-                # print("image data: ")
-  
                 try:
-                    #print("Prompt input variables: ", image_match_with_text_prompt.input_variables)
-                    #print("Imported prompt template: ", image_match_prompt.template)
+                  
                     formatted_prompt =image_match_with_text_prompt.format(
                         image_data=description_tag_json,
                         user_query=text)  # Use text as the value
@@ -254,7 +243,7 @@ async def search(
                 except Exception as e:
                     return f"Unexpected error in messages creation: {str(e)} (traceback: {type(e).__name__})"
                 # Step 4: Send to LLM and get response
-                # print("Searching for similar images using FAISS rext...")
+              
                
                 response_images,response_text=call_llm_with_prompt_image_text(formatted_prompt) 
 
@@ -272,14 +261,7 @@ async def search(
                 
        
             
-            #    # Extract plain text
-            #     json_str = response.strip().removeprefix("```json\n").rstrip("```")
-            #     print("json_str: ",json_str)
-
-            #     # Parse the JSON string into a Python dictionary
-            #     response_dict = json.loads(json_str)
-            #     print("response_dict: ",response_dict)
-
+            
             #     # Extract the "answer" field
                 response_text = response
                 print("response_text: ",response_text)
@@ -290,7 +272,112 @@ async def search(
         except Exception as e:
             # print(f"Error in FAISS search: {str(e)}")
             response_text = f"Error searching for '{text}': {str(e)}"
+    
+    elif imageFiles or imagePaths:
+        
+        try:
+            # Handle uploaded files
+            for file in imageFiles:
+                temp_path = os.path.join(images_dir, file.filename)
+                with open(temp_path, "wb") as f:
+                    f.write(await file.read())
+                # print(f"Searching with uploaded image: {temp_path}")
+                               
+                local_path=os.path.basename(temp_path)
+                
+                temp_path= os.path.abspath(os.path.join(UPLOAD_DIR, local_path))
+                # print("fTEMP LOCAL ",temp_path)
+                 
+                
+                image_metatag=find_image_in_database(local_path, metadata_dictionay)
+                if image_metatag is None:
+                    # print("new")
+                    tags = generate_image_tag_with_retry(temp_path)
+                    description = generate_description_with_retry(temp_path)
+                    image_metatag = {
+                        "description": description,
+                         "tag": tags                     
+                        
+                    }
+                # print("fileeee path data: ",image_metatag)
+                # print("-" * 50)
+                
+                
+                similar_images = search_using_image(temp_path, image_index ,  image_paths, threshold=0.4, top_k=10)
+                print("similar images uploaded files: ",similar_images)
+                description_tag_list=similar_images_description_tag(metadata_dictionay,similar_images)                
+                description_tag_json = json.dumps(description_tag_list)       
+                
+                found_image_metadata = json.dumps(image_metatag)
+                try:
+                   
+                    formatted_prompt = similar_image_by_image_prompt.format(
+                            user_input=found_image_metadata,
+                            image_data=description_tag_json
+                        )  # Use text as the value
+                  
+                    
+                except KeyError as e:
+                    return f"Prompt formatting error: {str(e)} (check prompt variables)"
+                
+                except Exception as e:
+                    return f"Unexpected error in messages creation: {str(e)} (traceback: {type(e).__name__})"
+                # Step 4: Send to LLM and get response
+               
+                response_images,response_text=call_llm_with_prompt_image_text(formatted_prompt)                 
+                
+                os.remove(temp_path)  # Clean up 
+
+
+                    
+                
+               
+
+            # Handle gallery image paths
+            if imagePaths:
+                paths = json.loads(imagePaths)
+                all_similar_images=[]
+                for path in paths:
+                    print(f"Searching with gallery image: {path}")
+                    local_path=os.path.basename(path)
+                   
+                    image_metatag=find_image_in_database(local_path, metadata_dictionay)
+                    
+                    
+                    
+                    similar_images = search_using_image(path, image_index ,  image_paths, threshold=0.4, top_k=10)
+                    print("similar images uploaded files: ",similar_images)
+                    
+                
+                description_tag_list=similar_images_description_tag(metadata_dictionay,similar_images)                
+                description_tag_json = json.dumps(description_tag_list)             
+                found_image_metadata = json.dumps(image_metatag)
+                
+                try:
+                   
+                    formatted_prompt = similar_image_by_image_prompt.format(
+                            user_input=found_image_metadata,
+                            image_data=description_tag_json
+                        )  # Use text as the value
+                    
+                    
+                except KeyError as e:
+                    return f"Prompt formatting error: {str(e)} (check prompt variables)"
+                
+                except Exception as e:
+                    return f"Unexpected error in messages creation: {str(e)} (traceback: {type(e).__name__})"
+                # Step 4: Send to LLM and get response
+                
+              
+                response_images,response_text=call_llm_with_prompt_image_text(formatted_prompt)
+                                                                            
+        except Exception as e:
+          
+            response_text += f" Error searching gallary images: {str(e)}"
        
+
+    if not response_text:
+        response_text = "No results found"
 
     
     
