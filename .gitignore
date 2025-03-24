@@ -54,4 +54,3 @@ coverage/
 
 # Optional: If you have uploaded static files or images that shouldn't be tracked
 public/uploads/
-config/
