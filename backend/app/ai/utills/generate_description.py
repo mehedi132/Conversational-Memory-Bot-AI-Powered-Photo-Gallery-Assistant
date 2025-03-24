@@ -13,14 +13,17 @@ project_root = os.path.abspath(os.path.join(current_dir, ".."))
 data_path = os.path.join(project_root, "config", "api_key.txt")
 
 
+#from dotenv import load_dotenv
+
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
 # Function to load API key from config file
 def load_api_key():
-    config_path = data_path  # Adjust if needed
-    try:
-        with open(config_path, "r") as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"API key file not found at {config_path}. Please create it.")
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found in environment variables. Please add it to your .env file.")
+    return api_key
 
 # Load API Key
 API_KEY = load_api_key()
