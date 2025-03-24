@@ -13,6 +13,30 @@ from ai.embeddings.text_embedding import get_text_embedding
 from ai.faiss_database.faiss_index import normalize_embedding
 # from ai.faiss_database.faiss_index import  image_ids,normalize_embedding
 
+def search_using_text(query, faiss_index, image_ids, threshold=0.85, top_k=5):
+    # Step 1: Generate embedding for the query
+    query_embedding = get_text_embedding(query)  # Get the embedding as a PyTorch tensor
+    query_embedding = normalize_embedding(query_embedding)  # Normalize the embedding
+
+    # Ensure query_embedding is a PyTorch tensor
+    if not isinstance(query_embedding, torch.Tensor):
+        query_embedding = torch.tensor(query_embedding)
+
+    # Step 2: Retrieve top N similar images from the index
+    D, I = faiss_index.search(query_embedding.detach().numpy(), k=top_k)  # Get top_k results
+
+    # Step 3: Calculate cosine similarity for each image and filter based on threshold
+    similar_images = []
+    for idx in range(len(I[0])):
+        # Get the actual image path using the returned index from FAISS
+        image_path = image_ids[I[0][idx]]       
+        similar_images.append((image_path))
+
+    # Sort results by similarity (descending order)
+
+    #print("search_using_text",similar_images)
+
+    return similar_images
 
 
 
