@@ -215,6 +215,81 @@ async def search(
         except Exception as e:
             # print(f"Error in multimodal FAISS search: {str(e)}")
             response_text = f"Error in multimodal search: {str(e)}"
+    
+    elif text:
+
+        print("Text search only", text)
+        
+        try:
+            # print("Searching")
+            result=process_input_langchain(text)
+            print("Result: ",result)
+           
+
+            
+            if result == "image":
+                # print("Searching for similar images ")
+                similar_images = search_using_text(text, image_index ,  image_paths, threshold=0.4, top_k=10)
+                
+                print("similar images in txt: ",similar_images)
+                description_tag_list=similar_images_description_tag(metadata_dictionay,similar_images)
+                # print("description_tag_list: ",description_tag_list)
+                description_tag_json = json.dumps(description_tag_list)
+               
+               
+                # print("text= ",text)
+                # print("image data: ")
+  
+                try:
+                    #print("Prompt input variables: ", image_match_with_text_prompt.input_variables)
+                    #print("Imported prompt template: ", image_match_prompt.template)
+                    formatted_prompt =image_match_with_text_prompt.format(
+                        image_data=description_tag_json,
+                        user_query=text)  # Use text as the value
+                    #print("Formatted prompt: ", formatted_prompt)
+                   
+                except KeyError as e:
+                    return f"Prompt formatting error: {str(e)} (check prompt variables)"
+                
+                except Exception as e:
+                    return f"Unexpected error in messages creation: {str(e)} (traceback: {type(e).__name__})"
+                # Step 4: Send to LLM and get response
+                # print("Searching for similar images using FAISS rext...")
+               
+                response_images,response_text=call_llm_with_prompt_image_text(formatted_prompt) 
+
+                # print("done")
+
+            elif result == "text":
+                print("Text found in database")
+                formatted_prompt = basic_text_prompt.format(
+                            input_text=text)
+                user_message = f"{formatted_prompt}"
+                response = chatbot.invoke(
+                {"input": user_message},
+                 config={"configurable": {"session_id": "default_session"}})
+                print("Response from chatbot:", response)
+                
+       
+            
+            #    # Extract plain text
+            #     json_str = response.strip().removeprefix("```json\n").rstrip("```")
+            #     print("json_str: ",json_str)
+
+            #     # Parse the JSON string into a Python dictionary
+            #     response_dict = json.loads(json_str)
+            #     print("response_dict: ",response_dict)
+
+            #     # Extract the "answer" field
+                response_text = response
+                print("response_text: ",response_text)
+            else:
+                response_text = "I'm not sure what you mean. Want to chat or see images?"
+
+           
+        except Exception as e:
+            # print(f"Error in FAISS search: {str(e)}")
+            response_text = f"Error searching for '{text}': {str(e)}"
        
 
     
